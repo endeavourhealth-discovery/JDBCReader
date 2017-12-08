@@ -1,0 +1,207 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.endeavourhealth.jdbcreader</groupId>
+  <artifactId>JDBCReader</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <packaging>jar</packaging>
+
+  <name>JDBCReader</name>
+
+  <properties>
+      <java.version>1.8</java.version>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <endeavour-config.version>1.15-SNAPSHOT</endeavour-config.version>
+      <endeavour-security.version>1.4-SNAPSHOT</endeavour-security.version>
+      <endeavour-utility.version>1.8-SNAPSHOT</endeavour-utility.version>
+      <endeavour-edsclient.version>1.0-SNAPSHOT</endeavour-edsclient.version>
+      <eds-core.version>1.63-SNAPSHOT</eds-core.version>
+
+      <bouncy-castle.version>1.56</bouncy-castle.version>
+      <commons-csv.version>1.4</commons-csv.version>
+      <commons-io.version>1.3.2</commons-io.version>
+      <commons-lang3.version>3.5</commons-lang3.version>
+      <gethostname4j.version>0.0.2</gethostname4j.version>
+      <hikari.version>2.5.1</hikari.version>
+      <keycloak.version>2.0.0.Final</keycloak.version>
+      <logback-classic.version>1.1.3</logback-classic.version>
+      <mysql.version>6.0.5</mysql.version>
+      <slack-integration.version>1.2.1</slack-integration.version>
+      <slf4j.version>1.7.21</slf4j.version>
+      <sqlserver.version>6.2.2.jre8</sqlserver.version>
+  </properties>
+
+    <repositories>
+        <repository>
+            <snapshots />
+            <id>snapshots</id>
+            <name>libs-snapshot</name>
+            <url>http://maven.endeavourhealth.net:8081/artifactory/libs-snapshot</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.endeavourhealth.common</groupId>
+            <artifactId>core</artifactId>
+            <version>${eds-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.endeavourhealth.configmanager</groupId>
+            <artifactId>configmanager</artifactId>
+            <version>${endeavour-config.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.endeavourhealth.common</groupId>
+            <artifactId>security</artifactId>
+            <version>${endeavour-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.endeavourhealth.common</groupId>
+            <artifactId>utility</artifactId>
+            <version>${endeavour-utility.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.endeavourhealth.common</groupId>
+            <artifactId>eds-client</artifactId>
+            <version>${endeavour-edsclient.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.kstruct</groupId>
+            <artifactId>gethostname4j</artifactId>
+            <version>${gethostname4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+        </dependency>
+
+      <dependency>
+          <groupId>mysql</groupId>
+          <artifactId>mysql-connector-java</artifactId>
+          <version>${mysql.version}</version>
+      </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>${sqlserver.version}</version>
+        </dependency>
+
+        <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>3.8.1</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- slf4j -->
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>${slf4j.version}</version>
+      </dependency>
+
+        <!-- JSon) -->
+      <dependency>
+          <groupId>javax.json</groupId>
+          <artifactId>javax.json-api</artifactId>
+          <version>1.1</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-core</artifactId>
+          <version>5.2.10.Final</version>
+      </dependency>
+
+        <!-- specifically include as excluded from eds-common -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-common</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-core</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+        <!-- end specifically included -->
+
+    </dependencies>
+
+    <build>
+
+    <plugins>
+        <!-- set complier version and lint arguments -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.1</version>
+            <configuration>
+                <source>${java.version}</source>
+                <target>${java.version}</target>
+                <compilerArgument>-Xlint:all</compilerArgument>
+                <showWarnings>true</showWarnings>
+                <showDeprecation>true</showDeprecation>
+            </configuration>
+        </plugin>
+
+        <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>2.6</version>
+            <configuration>
+                <descriptorRefs><descriptorRef>jar-with-dependencies</descriptorRef></descriptorRefs>
+                <archive>
+                    <manifest>
+                        <mainClass>oorg.endeavourhealth.jdbcreader.Main</mainClass>
+                    </manifest>
+                </archive>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>make-assembly</id>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>single</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+                <execution>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>copy</goal>
+                    </goals>
+                    <configuration>
+                        <artifactItems>
+                            <artifactItem>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>${project.artifactId}</artifactId>
+                                <version>${project.version}</version>
+                                <type>jar</type>
+                                <classifier>jar-with-dependencies</classifier>
+                            </artifactItem>
+                        </artifactItems>
+                        <outputDirectory>${project.parent.basedir}/target</outputDirectory>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+
+    </build>
+
+</project>
