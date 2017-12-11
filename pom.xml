@@ -163,7 +163,7 @@
                 <descriptorRefs><descriptorRef>jar-with-dependencies</descriptorRef></descriptorRefs>
                 <archive>
                     <manifest>
-                        <mainClass>oorg.endeavourhealth.jdbcreader.Main</mainClass>
+                        <mainClass>org.endeavourhealth.jdbcreader.Main</mainClass>
                     </manifest>
                 </archive>
             </configuration>
