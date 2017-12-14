@@ -1,28 +1,28 @@
 package org.endeavourhealth.jdbcreader;
 
-import javax.json.JsonObject;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ConfigurationConnectorVariable {
-    private JsonObject variableObject;
+    private JsonNode variableObject;
 
-    public ConfigurationConnectorVariable(JsonObject variableObject) {
+    public ConfigurationConnectorVariable(JsonNode variableObject) {
         this.variableObject = variableObject;
     }
 
     public String getName() {
-        return variableObject.getString("name");
+        return variableObject.get("name").asText();
     }
 
     public String getType() {
-        return variableObject.getString("type");
+        return variableObject.get("type").asText();
     }
 
     public String getValue() {
-        return variableObject.getString("value");
+        return variableObject.get("value").asText();
     }
 
     public long getValueAsLong() {
-        return Long.parseLong(variableObject.getString("value"));
+        return variableObject.get("value").asLong();
     }
 
 

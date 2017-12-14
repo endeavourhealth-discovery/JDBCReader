@@ -161,9 +161,20 @@ public class JdbcReaderTask implements Runnable {
                 // Re-use connection or open new
                 Connection connection = null;
                 if (connectionList.containsKey(configurationConnector.getSqlURL())) {
+                    LOG.trace("Reusing existing connection");
                     connection = connectionList.get(configurationConnector.getSqlURL());
                 } else {
-                    connection = DriverManager.getConnection(configurationConnector.getSqlURL());
+                    LOG.trace("Creating new connection");
+                    try {
+                        connection = DriverManager.getConnection(configurationConnector.getSqlURL());
+                    }
+                    catch (SQLException e) {
+                        LOG.trace("SQLException - Auto load of driver not working");
+                        LOG.trace( "Loading driver (" + configurationConnector.getDriver() + ") .....");
+                        Class.forName(configurationConnector.getDriver());
+                        LOG.trace( "......Driver loaded - trying again");
+                        connection = DriverManager.getConnection(configurationConnector.getSqlURL());
+                    }
                 }
 
                 LocalDataFile localDataFile = new LocalDataFile();
@@ -379,7 +390,7 @@ public class JdbcReaderTask implements Runnable {
      */
     private String adjustSQLStatement(String sqlstatement, HashMap<String, String> kvpList) {
         String ret = sqlstatement;
-        Iterator it = kvpList.keySet().iterator();
+        Iterator<String> it = kvpList.keySet().iterator();
         while (it.hasNext()) {
             String key = (String) it.next();
             ret = ret.replaceAll("\\Q${" + key + "}\\E", kvpList.get(key));

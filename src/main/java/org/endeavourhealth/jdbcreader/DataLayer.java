@@ -141,9 +141,9 @@ public class DataLayer {
 
     public void insertUpdateKeyValuePair(String batchName, String connectionName, HashMap<String, String> kvpList) throws Exception {
         RdbmsJDBCReaderDal database = DalProvider.factoryJDBCReaderDal();
-        Iterator it = kvpList.keySet().iterator();
+        Iterator<String> it = kvpList.keySet().iterator();
         while (it.hasNext()) {
-            String key = (String) it.next();
+            String key = it.next();
             KeyValuePair kvp = new KeyValuePair();
             kvp.setBatchName(batchName);
             kvp.setConnectionName(connectionName);

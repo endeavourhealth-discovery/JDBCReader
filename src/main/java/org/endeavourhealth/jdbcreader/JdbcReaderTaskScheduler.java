@@ -57,6 +57,8 @@ public class JdbcReaderTaskScheduler {
 
         List<JdbcReaderTaskInfo> tasks = new ArrayList<>();
 
+        LOG.info("Number of batches:" + configuration.getBatchConfigurations().size());
+
         for (ConfigurationBatch batchConfiguration : configuration.getBatchConfigurations()) {
 
             LOG.info("Creating JDBCReaderTask for batch configuration " + batchConfiguration.getBatchname());

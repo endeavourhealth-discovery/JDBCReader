@@ -18,7 +18,7 @@ public class Main {
             ConfigManager.Initialize("jdbcreader");
 
             LOG.info("Fetching jdbcreader configuration");
-            configuration = new Configuration(ConfigManager.getConfiguration("jdbcreaderconfig"));
+            configuration = new Configuration(ConfigManager.getConfigurationAsJson("jdbcreaderconfig"));
 
             try {
 

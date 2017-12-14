@@ -1,56 +1,57 @@
 package org.endeavourhealth.jdbcreader;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+//import javax.json.JsonArray;
+//import javax.json.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ConfigurationConnector {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigurationConnector.class);
 
-    private JsonObject connectionObject;
+    //private JsonObject connectionObject;
+    private JsonNode connectionObject;
     private List<ConfigurationConnectorVariable> variableList = new ArrayList<ConfigurationConnectorVariable>();
 
 
-    public ConfigurationConnector(JsonObject connectionObject) {
+    public ConfigurationConnector(JsonNode connectionObject) {
         this.connectionObject = connectionObject;
 
-        JsonArray array = connectionObject.getJsonArray("variablelist");
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JsonObject listitem = array.getJsonObject(i);
-                ConfigurationConnectorVariable newItem = new ConfigurationConnectorVariable(listitem);
+        JsonNode array = connectionObject.path("variablelist");
+
+        if (array.isMissingNode() != true && array.isArray()) {
+            for (JsonNode node : array) {
+                ConfigurationConnectorVariable newItem = new ConfigurationConnectorVariable(node);
                 this.variableList.add(newItem);
-                //LOG.trace("Connection variable added:" + listitem.toString());
             }
         }
     }
 
     public String getDriver() {
-        return connectionObject.getString("sqldriver");
+        return connectionObject.get("sqldriver").asText();
     }
 
     public String getSqlStatement() {
-        return connectionObject.getString("sqlstatement");
+        return connectionObject.get("sqlstatement").asText();
     }
 
     public String getSqlURL() {
-        return connectionObject.getString("sqlurl");
+        return connectionObject.get("sqlurl").asText();
     }
 
     public String getConnectorName() {
-        return connectionObject.getString("connectorname");
+        return connectionObject.get("connectorname").asText();
     }
 
     public String getInterfaceFileType() {
-        return connectionObject.getString("interfaceFileType");
+        return connectionObject.get("interfaceFileType").asText();
     }
 
     public boolean isNullValueAsString() {
-        return connectionObject.getBoolean("nullValueAsString");
+        return connectionObject.get("nullValueAsString").asBoolean();
     }
 
     public List<ConfigurationConnectorVariable> getVariables() {

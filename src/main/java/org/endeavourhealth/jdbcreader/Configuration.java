@@ -1,16 +1,17 @@
 package org.endeavourhealth.jdbcreader;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.kstruct.gethostname4j.Hostname;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.jdbcreader.utilities.JDBCReaderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.sql.DataSource;
+//import javax.json.Json;
+//import javax.json.JsonArray;
+//import javax.json.JsonObject;
+//import javax.json.JsonReader;
+//import javax.sql.DataSource;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -24,67 +25,84 @@ public final class Configuration {
     private static final String PROGRAM_CONFIG_MANAGER_NAME = "jdbcreader";
     private static final String INSTANCE_NAME_JAVA_PROPERTY = "INSTANCE_NAME";
     // instance members //
-    private List<String> interfaceFileTypes = new ArrayList<String>() ;
-    private String primaryConfig;
+    private List<JsonNode> interfaceFileTypes = new ArrayList<JsonNode>() ;
     private String machineName;
     private String instanceName;
-    private JsonObject objroot;
+    private JsonNode objroot;
     private List<ConfigurationBatch> batchConfigurationList = new ArrayList<ConfigurationBatch>();
 
-    public Configuration(String primaryConfig) throws Exception {
-        this.primaryConfig = primaryConfig;
+    public Configuration(JsonNode root) throws Exception {
+        this.objroot = root;
+        LOG.info("configuration:" + objroot.toString());
+        LOG.info("just checking:" + getConfigurationId());
         initialiseMachineName();
         retrieveInstanceName();
-        loadDbConfiguration();
+        //loadDbConfiguration();
+        JsonNode fileTypeArray = objroot.path("interfaceFileTypes");
+        if (fileTypeArray.isMissingNode() != true && fileTypeArray.isArray()) {
+            for (JsonNode node : fileTypeArray) {
+                interfaceFileTypes.add(node);
+            }
+        }
+
+        JsonNode batchList = objroot.path("batchlist");
+        LOG.info("batchlist:" + batchList.isArray());
+        LOG.info("batchlist:" + batchList.isMissingNode());
+        if (batchList.isMissingNode() != true && batchList.isArray()) {
+            for (JsonNode node : batchList) {
+                ConfigurationBatch newItem = new ConfigurationBatch(node);
+                batchConfigurationList.add(newItem);
+            }
+        }
     }
 
     public String getMachineName() { return machineName; }
     public String getInstanceName() { return instanceName; }
     public List<ConfigurationBatch> getBatchConfigurations() { return this.batchConfigurationList; }
     public String getConfigurationId() {
-        return objroot.getString("configurationId");
+        return objroot.get("configurationId").asText();
     }
 
     public String getLocalRootPathPrefix() {
-        return objroot.getString("localRootPathPrefix");
+        return objroot.get("localRootPathPrefix").asText();
     }
     public String getSoftwareContentType() {
-        return objroot.getString("softwareContentType");
+        return objroot.get("softwareContentType").asText();
     }
     public String getConfigurationFriendlyName() {
-        return objroot.getString("configurationFriendlyName");
+        return objroot.get("configurationFriendlyName").asText();
     }
 
     public String getSoftwareVersion() {
-        return objroot.getString("softwareVersion");
+        return objroot.get("softwareVersion").asText();
     }
     public String getEdsUrl() {
-        return objroot.getString("edsurl");
+        return objroot.get("edsurl").asText();
     }
     public boolean isUseKeycloak() {
-        return objroot.getBoolean("usekeycloak");
+        return objroot.get("usekeycloak").asBoolean();
     }
     public String getKeycloakTokenUri() {
-        return objroot.getString("keycloaktokenuri");
+        return objroot.get("keycloaktokenuri").asText();
     }
     public String getKeycloakRealm() {
-        return objroot.getString("keycloakrealm");
+        return objroot.get("keycloakrealm").asText();
     }
     public String getKeycloakUsername() {
-        return objroot.getString("keycloakusername");
+        return objroot.get("keycloakusername").asText();
     }
     public String getKeycloakPassword() {
-        return objroot.getString("keycloakpassword");
+        return objroot.get("keycloakpassword").asText();
     }
     public String getKeycloakClientId() {
-        return objroot.getString("keycloakclientid");
+        return objroot.get("keycloakclientid").asText();
     }
 
     public int getHttpManagementPort() {
-        return objroot.getInt("HttpManagementPort");
+        return objroot.get("HttpManagementPort").asInt();
     }
 
-    public List<String> getInterfaceFileTypes() {
+    public List<JsonNode> getInterfaceFileTypes() {
         return interfaceFileTypes;
     }
 
@@ -107,25 +125,6 @@ public final class Configuration {
             throw e;
         } catch (Exception e) {
             throw new JDBCReaderException("Could not read " + INSTANCE_NAME_JAVA_PROPERTY + " Java -D property");
-        }
-    }
-
-    private void loadDbConfiguration() throws SQLException, JDBCReaderException {
-        JsonArray array;
-        JsonReader rdr = Json.createReader(new StringReader(primaryConfig));
-        JsonObject obj = rdr.readObject();
-        objroot = obj.getJsonObject("connectorconfiguration");
-
-        array = objroot.getJsonArray("interfaceFileTypes");
-        for (int i = 0; i < array.size(); i++) {
-            interfaceFileTypes.add(array.getString(i));
-        }
-
-        array = objroot.getJsonArray("batchlist");
-        for (int i = 0; i < array.size(); i++) {
-            JsonObject listitem = array.getJsonObject(i);
-            ConfigurationBatch newItem = new ConfigurationBatch(listitem);
-            this.batchConfigurationList.add(newItem);
         }
     }
 

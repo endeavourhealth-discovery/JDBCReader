@@ -1,52 +1,51 @@
 package org.endeavourhealth.jdbcreader;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ConfigurationBatch {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigurationBatch.class);
-    private JsonObject batchObject;
+    private JsonNode batchObject;
     private List<ConfigurationConnector> connectionList = new ArrayList<ConfigurationConnector>();
 
-    public ConfigurationBatch(JsonObject batchObject) {
+    public ConfigurationBatch(JsonNode batchObject) {
         this.batchObject = batchObject;
 
-        JsonArray array = batchObject.getJsonArray("connectorlist");
-        for (int i = 0; i < array.size(); i++) {
-            JsonObject listitem = array.getJsonObject(i);
-            ConfigurationConnector newItem = new ConfigurationConnector(listitem);
-            this.connectionList.add(newItem);
-            //LOG.trace("Connection config added:" + listitem.toString());
+        JsonNode array = batchObject.path("connectorlist");
+        if (array.isMissingNode() != true && array.isArray()) {
+            for (JsonNode node : array) {
+                ConfigurationConnector newItem = new ConfigurationConnector(node);
+                this.connectionList.add(newItem);
+            }
         }
     }
 
     public String getBatchname() {
-        return batchObject.getString("batchname");
+        return batchObject.get("batchname").asText();
     }
 
     public String getOrganisationId()  {
-        return batchObject.getString("organisationId");
+        return batchObject.get("organisationId").asText();
     }
 
     public String getPollFrequency() {
-        return batchObject.getString("frequency");
+        return batchObject.get("frequency").asText();
     }
 
     public String getPollStart() {
-        return batchObject.getString("pollstart", "");
+        return (batchObject.get("pollstart") == null ? "" : batchObject.get("pollstart").asText());
     }
 
     public String getLocalRootPath () {
-        return batchObject.getString("localRootPath");
+        return batchObject.get("localRootPath").asText();
     }
 
     public String getInterfaceTypeName()  {
-        return batchObject.getString("interfaceTypeName");
+        return batchObject.get("interfaceTypeName").asText();
     }
 
     public List<ConfigurationConnector> getConnections() {
