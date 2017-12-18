@@ -7,6 +7,7 @@ import org.endeavourhealth.common.eds.EdsSender;
 import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.jdbcreader.models.Batch;
 import org.endeavourhealth.core.database.dal.jdbcreader.models.BatchFile;
 import org.endeavourhealth.core.database.dal.jdbcreader.models.KeyValuePair;
@@ -109,6 +110,7 @@ public class JdbcReaderTask implements Runnable {
             return currentbatch;
         }
     }
+
     /*
      *
      */
@@ -140,6 +142,7 @@ public class JdbcReaderTask implements Runnable {
             LOG.trace("Found {} connections in batch {}", configurationBatch.getConnections().size(), configurationBatch.getBatchname());
 
             int countAlreadyProcessed = 0;
+            LocalDataFile localDataFile = null;
 
             // Loop through all connections for this batch
             for (ConfigurationConnector configurationConnector : configurationBatch.getConnections()) {
@@ -177,13 +180,14 @@ public class JdbcReaderTask implements Runnable {
                     }
                 }
 
-                LocalDataFile localDataFile = new LocalDataFile();
+                localDataFile = new LocalDataFile();
                 localDataFile.setLocalRootPathPrefix(configuration.getLocalRootPathPrefix());
                 localDataFile.setLocalRootPath(configurationBatch.getLocalRootPath());
                 localDataFile.setBatchIdentifier(currentBatch.getBatchIdentifier());
                 localDataFile.setFileName(configurationConnector.getInterfaceFileType() + ".csv");
+                localDataFile.setTempPathPrefix(configuration.getTempPathPrefix());
 
-                createBatchDirectory(localDataFile);
+                createBatchDirectories(localDataFile);
 
                 currentBatch.setLocalPath(localDataFile.getLocalPathBatch());
 
@@ -219,9 +223,19 @@ public class JdbcReaderTask implements Runnable {
             if (countAlreadyProcessed > 0)
                 LOG.trace("Skipped {} files as already processed them", new Integer(countAlreadyProcessed));
 
-            db.setBatchAsComplete(currentBatch);
+            // Move from temp to archive
+            File tempDir = new File(localDataFile.getTempPathBatch());
+            File[] tempFiles = tempDir.listFiles();
+            LOG.info("Completed processing {} files. Moving file(s) from temp storage to archive", tempFiles.length);
+            for (File f : tempFiles) {
+                LOG.info("Moving file " + f.getAbsolutePath() + " to " + localDataFile.getLocalPathBatch());
+                FileHelper.writeFileToSharedStorage(localDataFile.getLocalPathBatch(), f);
+                //if (!f.delete())
+                  //  throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
+            }
+            //tempDir.delete();
 
-            //LOG.info("Completed processing {} files", Integer.toString(remoteFiles.size()));
+            db.setBatchAsComplete(currentBatch);
 
             return true;
         } catch (Exception e) {
@@ -305,7 +319,7 @@ public class JdbcReaderTask implements Runnable {
     /*
      *
      */
-    private void getData(Connection connection, LocalDataFile batchFile, ConfigurationConnector configurationConnector, HashMap<String, String> kvpList) throws Exception {
+    private void getData(Connection connection, LocalDataFile localDataFile, ConfigurationConnector configurationConnector, HashMap<String, String> kvpList) throws Exception {
         ArrayList<String> columnNameList = new ArrayList<String>();
         StringBuffer sb = null;
         ResultSetMetaData rsmd = null;
@@ -314,9 +328,9 @@ public class JdbcReaderTask implements Runnable {
         LOG.info("   Executing sql:" + adjustedSQL);
         ResultSet rs = stmt.executeQuery(adjustedSQL);
 
-        LOG.info("   Saving content to: " + batchFile.getLocalPathFile());
+        LOG.info("   Saving content to: " + localDataFile.getTempPathFile());
 
-        File temporaryDownloadFile = new File(batchFile.getLocalPathFile() + ".download");
+        File temporaryDownloadFile = new File(localDataFile.getTempPathFile() + ".download");
 
         if (temporaryDownloadFile.exists())
             if (!temporaryDownloadFile.delete())
@@ -377,12 +391,12 @@ public class JdbcReaderTask implements Runnable {
             dataLogFileBuffer = null;
         }
 
-        File destination = new File(batchFile.getLocalPathFile());
+        File destination = new File(localDataFile.getTempPathFile());
         if (destination.exists())
             destination.delete();
 
         if (!temporaryDownloadFile.renameTo(destination))
-            throw new IOException("Could not temporary download file to " + batchFile.getLocalPathFile());
+            throw new IOException("Could not temporary download file to " + localDataFile.getTempPathFile());
     }
 
     /*
@@ -401,11 +415,22 @@ public class JdbcReaderTask implements Runnable {
     /*
      *
      */
-    private void createBatchDirectory(LocalDataFile batchFile) throws IOException {
-        File localPath = new File(batchFile.getLocalPathBatch());
-        if (!localPath.exists())
-            if (!localPath.mkdirs())
-                throw new IOException("Could not create path " + localPath);
+    private void createBatchDirectories(LocalDataFile batchFile) throws IOException {
+        if (FileHelper.createDirectory(batchFile.getLocalPath())) {
+            if (!FileHelper.createDirectory(batchFile.getLocalPathBatch())) {
+                throw new IOException("Could not create path " + batchFile.getLocalPathBatch());
+            }
+        } else {
+            throw new IOException("Could not create path " + batchFile.getLocalPath());
+        }
+
+        if (FileHelper.createDirectory(batchFile.getTempPath())) {
+            if (!FileHelper.createDirectory(batchFile.getTempPathBatch())) {
+                throw new IOException("Could not create path " + batchFile.getTempPathBatch());
+            }
+        } else {
+            throw new IOException("Could not create path " + batchFile.getTempPath());
+        }
     }
 
     /*
@@ -509,8 +534,11 @@ public class JdbcReaderTask implements Runnable {
     private void notify(Batch unnotifiedBatch) throws JDBCReaderException, IOException {
         //Prvious->NotificationCreator notificationCreator = ImplementationActivator.createSftpNotificationCreator(configurationBatch.getInterfaceTypeName());
         //Prvious->String messagePayload = notificationCreator.createNotificationMessage(configuration, unnotifiedBatch);
+        LOG.trace("getLocalPath=" + unnotifiedBatch.getLocalPath());
         String relativePath = unnotifiedBatch.getLocalPath().substring(configuration.getLocalRootPathPrefix().length());
+        LOG.trace("relativePath=" + relativePath);
         String fullPath = configuration.getLocalRootPathPrefix() + relativePath;
+        LOG.trace("fullPath=" + fullPath);
         List<String> files = new ArrayList<>();
         for (File f: new File(fullPath).listFiles()) {
             files.add(FilenameUtils.concat(relativePath, f.getName()));

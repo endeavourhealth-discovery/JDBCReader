@@ -66,6 +66,9 @@ public final class Configuration {
     public String getLocalRootPathPrefix() {
         return objroot.get("localRootPathPrefix").asText();
     }
+    public String getTempPathPrefix() {
+        return objroot.get("tempPathPrefix").asText();
+    }
     public String getSoftwareContentType() {
         return objroot.get("softwareContentType").asText();
     }

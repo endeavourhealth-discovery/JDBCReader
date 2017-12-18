@@ -5,6 +5,7 @@ import org.apache.commons.io.FilenameUtils;
 public class LocalDataFile {
 
     private String localRootPathPrefix;
+    private String tempPathPrefix;
     private String localRootPath;
     private String batchIdentifier;
     private String fileName;
@@ -73,4 +74,25 @@ public class LocalDataFile {
     public void setBatchFileId(Integer batchFileId) {
         this.batchFileId = batchFileId;
     }
+
+    public String getTempPathPrefix() {
+        return tempPathPrefix;
+    }
+
+    public void setTempPathPrefix(String tempPathPrefix) {
+        this.tempPathPrefix = tempPathPrefix;
+    }
+
+    public String getTempPath() {
+        return FilenameUtils.concat(this.tempPathPrefix, this.localRootPath);
+    }
+
+    public String getTempPathBatch() {
+        return FilenameUtils.concat(getTempPath(), this.getBatchIdentifier());
+    }
+
+    public String getTempPathFile() {
+        return FilenameUtils.concat(getTempPathBatch(), getFileName());
+    }
+
 }
