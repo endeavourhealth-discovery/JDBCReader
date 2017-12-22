@@ -228,8 +228,9 @@ public class JdbcReaderTask implements Runnable {
             File[] tempFiles = tempDir.listFiles();
             LOG.info("Completed processing {} files. Moving file(s) from temp storage to archive", tempFiles.length);
             for (File f : tempFiles) {
-                LOG.info("Moving file " + f.getAbsolutePath() + " to " + localDataFile.getLocalPathBatch());
-                FileHelper.writeFileToSharedStorage(localDataFile.getLocalPathBatch(), f);
+                String newFileName = FilenameUtils.concat(localDataFile.getLocalPathBatch(), f.getName());
+                LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
+                FileHelper.writeFileToSharedStorage(newFileName, f);
                 //if (!f.delete())
                   //  throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
             }
