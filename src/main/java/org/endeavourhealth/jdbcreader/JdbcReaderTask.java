@@ -542,7 +542,7 @@ public class JdbcReaderTask implements Runnable {
         LOG.trace("fullPath=" + fullPath);
         List<String> files = new ArrayList<>();
         for (File f: new File(fullPath).listFiles()) {
-            files.add(FilenameUtils.concat(relativePath, f.getName()));
+            files.add(FilenameUtils.concat(relativePath.substring(1), f.getName()));
         }
         String messagePayload = StringUtils.join(files, System.lineSeparator());
 
