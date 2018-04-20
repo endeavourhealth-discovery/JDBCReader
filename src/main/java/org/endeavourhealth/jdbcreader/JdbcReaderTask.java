@@ -325,8 +325,8 @@ public class JdbcReaderTask implements Runnable {
                         throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
                 LOG.info("   Saving content to: " + temporaryDownloadFile);
                 // Open output file
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                zos = new ZipOutputStream(baos);
+                FileOutputStream dest = new FileOutputStream(temporaryDownloadFile);
+                zos = new ZipOutputStream(new BufferedOutputStream(dest));
                 zos.putNextEntry(new ZipEntry(tempFileName + ".csv"));
                 // Write header
                 zos.write(headerLine.getBytes());
@@ -403,6 +403,8 @@ public class JdbcReaderTask implements Runnable {
                 }
             }
 
+            LOG.info("      Writing line: " + sb.toString());
+
             if (configurationBatch.zipDestinationFile()) {
                 zos.write(sb.toString().getBytes());
                 zos.write("\r\n".getBytes());
@@ -421,6 +423,7 @@ public class JdbcReaderTask implements Runnable {
         }
 
         if (zos != null) {
+            LOG.info("   Closing zip");
             zos.flush();
             zos.close();
         }
@@ -444,7 +447,7 @@ public class JdbcReaderTask implements Runnable {
         String uuid = UUID.randomUUID().toString();
         ret = ret.replaceAll("\\Q${UUID}\\E", uuid);
 
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
         Date d = new Date();
         ret = ret.replaceAll("\\Q${NOW}\\E", simpleDateFormat.format(d));
 
