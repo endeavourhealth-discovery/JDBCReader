@@ -403,8 +403,6 @@ public class JdbcReaderTask implements Runnable {
                 }
             }
 
-            LOG.info("      Writing line: " + sb.toString());
-
             if (configurationBatch.zipDestinationFile()) {
                 zos.write(sb.toString().getBytes());
                 zos.write("\r\n".getBytes());
@@ -423,7 +421,6 @@ public class JdbcReaderTask implements Runnable {
         }
 
         if (zos != null) {
-            LOG.info("   Closing zip");
             zos.flush();
             zos.close();
         }
