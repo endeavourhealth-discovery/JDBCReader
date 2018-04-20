@@ -85,6 +85,10 @@ public final class Configuration {
         return objroot.get("HttpManagementPort").asInt();
     }
 
+    public boolean notifyStartStopSlack() {
+        return objroot.get("notifyStartStopSlack").asBoolean(false);
+    }
+
     public List<JsonNode> getInterfaceFileTypes() {
         return interfaceFileTypes;
     }

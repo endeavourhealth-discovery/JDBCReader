@@ -2,6 +2,7 @@ package org.endeavourhealth.jdbcreader;
 
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,16 +22,17 @@ public class Main {
             configuration = new Configuration(ConfigManager.getConfigurationAsJson("jdbcreaderconfig"));
 
             try {
+                String startupText = "Instance " + configuration.getInstanceName() + " on host " + configuration.getMachineName() + " started";
 
                 LOG.info("--------------------------------------------------");
                 LOG.info(PROGRAM_DISPLAY_NAME);
                 LOG.info("--------------------------------------------------");
 
-                LOG.info("Instance " + configuration.getInstanceName() + " on host " + configuration.getMachineName());
-                //LOG.info("Processing configuration(s): " + configuration.getConfigurationIdsForDisplay());
+                LOG.info(startupText);
 
-                /*slackNotifier = new SlackNotifier(configuration);
-                slackNotifier.notifyStartup();*/
+                if (configuration.notifyStartStopSlack()) {
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.JDBCReaderAlertsHomerton, startupText);
+                }
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown()));
 
@@ -46,9 +48,14 @@ public class Main {
         }
         catch (Exception e) {
             LOG.error("Fatal exception occurred", e);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.JDBCReaderAlertsHomerton,"Fatal error in JDBCReader", e);
             System.exit(-1);
         }
-	}
+
+        if (configuration.notifyStartStopSlack()) {
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.JDBCReaderAlertsHomerton, "JDBCReader stopped");
+        }
+    }
 
     private static void shutdown() {
         try {
