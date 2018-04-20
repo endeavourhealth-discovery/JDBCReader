@@ -2,19 +2,14 @@ package org.endeavourhealth.jdbcreader;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
 import org.endeavourhealth.common.eds.EdsSender;
 import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
-import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.jdbcreader.models.Batch;
-import org.endeavourhealth.core.database.dal.jdbcreader.models.BatchFile;
 import org.endeavourhealth.core.database.dal.jdbcreader.models.KeyValuePair;
 import org.endeavourhealth.core.database.dal.jdbcreader.models.NotificationMessage;
-import org.endeavourhealth.jdbcreader.implementations.*;
 import org.endeavourhealth.jdbcreader.utilities.JDBCReaderException;
-import org.endeavourhealth.jdbcreader.utilities.JDBCValidationException;
 import org.endeavourhealth.jdbcreader.utilities.SlackNotifier;
 import org.slf4j.LoggerFactory;
 
@@ -25,15 +20,16 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class JdbcReaderTask implements Runnable {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(JdbcReaderTask.class);
     private Map<Long, String> notificationErrorrs = new HashMap<>();
-    private BufferedWriter dataLogFileBuffer = null;
 
     private Configuration configuration = null;
     private String configurationId = null;
@@ -53,21 +49,21 @@ public class JdbcReaderTask implements Runnable {
             initialise();
 
             // Get last batch
-            Batch currentbatch = getOrCreateBatch();
-            LOG.trace("Current BatchId:" + currentbatch.getBatchId());
+            //Batch currentbatch = getOrCreateBatch();
+            //LOG.trace("Current BatchId:" + currentbatch.getBatchId());
 
             LOG.trace(">>>Retrieving data");
-            if (!downloadAndProcessFiles(currentbatch)) {
-                throw new JDBCReaderException("Exception occurred downloading and processing files - halting to prevent incorrect ordering of batches.");
+            if (!downloadFiles()) {
+                throw new JDBCReaderException("Exception occurred downloading and processing files - halting to prevent incorrect ordering.");
             }
 
-            LOG.trace(">>>Validating batches");
-            if (!validateBatches()) {
-                throw new JDBCReaderException("Exception occurred validating batches - halting to prevent incorrect ordering of batches.");
-            }
+            //LOG.trace(">>>Validating batches");
+            //if (!validateBatches()) {
+              //  throw new JDBCReaderException("Exception occurred validating batches - halting to prevent incorrect ordering of batches.");
+            //}
 
-            LOG.trace(">>>Notifying EDS");
-            notifyEds();
+            //LOG.trace(">>>Notifying EDS");
+            //notifyEds();
 
             LOG.trace(">>>Completed JDBCReader run");
 
@@ -79,6 +75,7 @@ public class JdbcReaderTask implements Runnable {
     /*
      * Get last Batch record for this batch name
      */
+    /*
     private Batch getOrCreateBatch() throws Exception {
         Batch currentbatch = db.getLastBatch(configuration.getConfigurationId(), configurationBatch.getBatchname());
         if (currentbatch == null) {
@@ -109,40 +106,46 @@ public class JdbcReaderTask implements Runnable {
             LOG.trace("Batch record is incomplete for " + configurationBatch.getBatchname());
             return currentbatch;
         }
-    }
+    }*/
 
     /*
      *
      */
     private void initialise() throws Exception {
         this.configurationBatch = configuration.getBatchConfiguration(configurationId);
-        checkLocalRootPathPrefixExists();
-    }
 
-    /*
-     *
-     */
-    private void checkLocalRootPathPrefixExists() throws Exception {
-        if (StringUtils.isNotEmpty(this.configuration.getLocalRootPathPrefix())) {
-
-            File rootPath = new File(this.configuration.getLocalRootPathPrefix());
-
+        // Temporary destination must be local - cannot be S3
+        if (StringUtils.isNotEmpty(this.configuration.getTempPathPrefix())) {
+            File rootPath = new File(this.configuration.getTempPathPrefix());
             if ((!rootPath.exists()) || (!rootPath.isDirectory()))
-                throw new JDBCReaderException("Local root path prefix '" + rootPath + "' does not exist");
+                throw new JDBCReaderException("Local temp path '" + rootPath + "' does not exist");
+        }
+
+        // Final destination can be local file or S3
+        if (StringUtils.isNotEmpty(this.configuration.getDestinationPathPrefix())) {
+            if (FileHelper.directoryExists(this.configuration.getDestinationPathPrefix()) == false)
+                throw new JDBCReaderException("Root path '" + this.configuration.getDestinationPathPrefix() + "' does not exist");
         }
     }
 
     /*
      *
      */
-    private boolean downloadAndProcessFiles(Batch currentBatch) {
+    private boolean downloadFiles() {
         HashMap<String, Connection> connectionList = new HashMap<String, Connection>();
+        ArrayList<File> tempFiles = new ArrayList<File>();
 
         try {
-            LOG.trace("Found {} connections in batch {}", configurationBatch.getConnections().size(), configurationBatch.getBatchname());
+            LOG.trace("Found {} connection(s) in batch {}", configurationBatch.getConnections().size(), configurationBatch.getBatchname());
 
-            int countAlreadyProcessed = 0;
-            LocalDataFile localDataFile = null;
+            String tempBatchDir = FilenameUtils.concat(this.configuration.getTempPathPrefix(), configurationBatch.getBatchname());
+            FileHelper.createDirectoryIfNotExists(tempBatchDir);
+
+            String destBatchDir = null;
+            if (this.configuration.getDestinationPathPrefix() != null && this.configuration.getDestinationPathPrefix().length() > 0) {
+                destBatchDir = FilenameUtils.concat(this.configuration.getDestinationPathPrefix(), configurationBatch.getBatchname());
+                FileHelper.createDirectoryIfNotExists(destBatchDir);
+            }
 
             // Loop through all connections for this batch
             for (ConfigurationConnector configurationConnector : configurationBatch.getConnections()) {
@@ -180,65 +183,34 @@ public class JdbcReaderTask implements Runnable {
                     }
                 }
 
-                localDataFile = new LocalDataFile();
-                localDataFile.setLocalRootPathPrefix(configuration.getLocalRootPathPrefix());
-                localDataFile.setLocalRootPath(configurationBatch.getLocalRootPath());
-                localDataFile.setBatchIdentifier(currentBatch.getBatchIdentifier());
-                localDataFile.setFileName(configurationConnector.getInterfaceFileType() + ".csv");
-                localDataFile.setTempPathPrefix(configuration.getTempPathPrefix());
-
-                createBatchDirectories(localDataFile);
-
-                currentBatch.setLocalPath(localDataFile.getLocalPathBatch());
-
-                BatchFile batchFile = db.getBatchFile(currentBatch.getBatchId(), localDataFile.getFileName());
-                if (batchFile == null) {
-                    // First attempt on this file / sql-statement
-                    LOG.trace("BatchFile record not found for " + localDataFile.getFileName());
-                    batchFile = new BatchFile();
-                    batchFile.setBatchId(currentBatch.getBatchId());
-                    batchFile.setFileTypeIdentifier(configurationConnector.getInterfaceFileType());
-                    batchFile.setInsertDate(new Date());
-                    batchFile.setFilename(localDataFile.getFileName());
-                    db.addBatchFile(batchFile);
-                } else if (batchFile.isDownloaded()) {
-                    // File already downloaded - SQL content already saved successfully to local file
-                    LOG.trace("BatchFile record found for " + localDataFile.getFileName() + " and already marked as downloaded");
-                    countAlreadyProcessed ++;
-                    continue;
-                } else {
-                    // Retry
-                    LOG.trace("BatchFile record found for " + localDataFile.getFileName() + " and NOT marked as downloaded");
-                }
-                LOG.trace("Current BatchFileId:" + batchFile.getBatchFileId());
-
-                getData(connection, localDataFile, configurationConnector, kvpList);
-
-                db.setBatchFileAsDownloaded(batchFile);
+                File temporaryFile = getData(connection, tempBatchDir, replaceVariablesWithValues(configurationConnector.getFilename(), kvpList), configurationConnector, kvpList);
+                tempFiles.add(temporaryFile);
 
                 LOG.trace("Saving " + kvpList.size() + " KVP entries");
                 db.insertUpdateKeyValuePair(configurationBatch.getBatchname(), configurationConnector.getConnectorName(), kvpList);
             }
 
-            if (countAlreadyProcessed > 0)
-                LOG.trace("Skipped {} files as already processed them", new Integer(countAlreadyProcessed));
-
             // Move from temp to archive
-            File tempDir = new File(localDataFile.getTempPathBatch());
-            File[] tempFiles = tempDir.listFiles();
-            LOG.info("Completed processing {} files. Moving file(s) from temp storage to archive", tempFiles.length);
-            for (File f : tempFiles) {
-                String newFileName = FilenameUtils.concat(localDataFile.getLocalPathBatch(), f.getName());
-                LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
-                FileHelper.writeFileToSharedStorage(newFileName, f);
-                //if (!f.delete())
-                  //  throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
+            LOG.info("Completed processing {} files.", tempFiles.size());
+            if (destBatchDir != null) {
+                LOG.info("Moving file(s) from temp storage to archive");
+                for (File f : tempFiles) {
+                    if (f.exists()) {
+                        String newFileName = FilenameUtils.concat(destBatchDir, f.getName());
+                        LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
+                        FileHelper.writeFileToSharedStorage(newFileName, f);
+                        // TODO
+                        //if (!f.delete())
+                        //  throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
+                    } else {
+                        LOG.info("File not moved (missing)" + f.getAbsolutePath());
+                    }
+                }
+                //tempDir.delete();
             }
-            //tempDir.delete();
-
-            db.setBatchAsComplete(currentBatch);
 
             return true;
+
         } catch (Exception e) {
             LOG.error("Exception occurred while processing files - cannot continue or may process batches out of order", e);
         } finally {
@@ -320,27 +292,20 @@ public class JdbcReaderTask implements Runnable {
     /*
      *
      */
-    private void getData(Connection connection, LocalDataFile localDataFile, ConfigurationConnector configurationConnector, HashMap<String, String> kvpList) throws Exception {
+    private File getData(Connection connection, String tempFilebatchDir, String tempFileName, ConfigurationConnector configurationConnector, HashMap<String, String> kvpList) throws Exception {
+        File temporaryDownloadFile = null;
+        BufferedWriter temporaryDownloadFileBuffer = null;
+        ZipOutputStream zos = null;
         ArrayList<String> columnNameList = new ArrayList<String>();
         StringBuffer sb = null;
         ResultSetMetaData rsmd = null;
+
         Statement stmt = connection.createStatement();
-        String adjustedSQL = adjustSQLStatement(configurationConnector.getSqlStatement(), kvpList);
+        String adjustedSQL = replaceVariablesWithValues(configurationConnector.getSqlStatement(), kvpList);
         LOG.info("   Executing sql:" + adjustedSQL);
         ResultSet rs = stmt.executeQuery(adjustedSQL);
 
-        LOG.info("   Saving content to: " + localDataFile.getTempPathFile());
-
-        File temporaryDownloadFile = new File(localDataFile.getTempPathFile() + ".download");
-
-        if (temporaryDownloadFile.exists())
-            if (!temporaryDownloadFile.delete())
-                throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
-
-        // Open output file
-        dataLogFileBuffer = new BufferedWriter(new FileWriter(temporaryDownloadFile));
-
-        // Write headers
+        // Get headers
         rsmd = rs.getMetaData();
 
         sb = new StringBuffer();
@@ -350,8 +315,35 @@ public class JdbcReaderTask implements Runnable {
             }
             sb.append(rsmd.getColumnName(a));
         }
-        dataLogFileBuffer.write(sb.toString());
-        dataLogFileBuffer.newLine();
+        String headerLine = sb.toString();
+
+        if (configurationConnector.writeEmptyFileIfNothingFound()) {
+            if (configurationBatch.zipDestinationFile()) {
+                temporaryDownloadFile = new File(FileHelper.combinePaths(tempFilebatchDir, tempFileName)+ ".zip");
+                if (temporaryDownloadFile.exists())
+                    if (!temporaryDownloadFile.delete())
+                        throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
+                LOG.info("   Saving content to: " + temporaryDownloadFile);
+                // Open output file
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                zos = new ZipOutputStream(baos);
+                zos.putNextEntry(new ZipEntry(tempFileName + ".csv"));
+                // Write header
+                zos.write(headerLine.getBytes());
+                zos.write("\r\n".getBytes());
+            } else {
+                temporaryDownloadFile = new File(FileHelper.combinePaths(tempFilebatchDir, tempFileName)+ ".csv");
+                if (temporaryDownloadFile.exists())
+                    if (!temporaryDownloadFile.delete())
+                        throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
+                LOG.info("   Saving content to: " + temporaryDownloadFile);
+                // Open output file
+                temporaryDownloadFileBuffer = new BufferedWriter(new FileWriter(temporaryDownloadFile));
+                // Write header
+                temporaryDownloadFileBuffer.write(headerLine);
+                temporaryDownloadFileBuffer.newLine();
+            }
+        }
 
         // Write content
         while (rs.next()) {
@@ -368,6 +360,9 @@ public class JdbcReaderTask implements Runnable {
                 if (sb.length() > 0) {
                     sb.append(",");
                 }
+
+                sqlField = sqlField.replaceAll("\"","\\\"");
+
                 if (sqlField.indexOf(",") >= 0) {
                     sb.append("\"");
                     sb.append(sqlField);
@@ -375,47 +370,91 @@ public class JdbcReaderTask implements Runnable {
                 } else {
                     sb.append(sqlField);
                 }
+
                 // Ensure all values from last row is saved
                 kvpList.put(rsmd.getColumnName(a), sqlField);
             }
 
-            dataLogFileBuffer.write(sb.toString());
-            dataLogFileBuffer.newLine();
+            if (temporaryDownloadFileBuffer == null && zos == null) {
+                if (configurationBatch.zipDestinationFile()) {
+                    temporaryDownloadFile = new File(FileHelper.combinePaths(tempFilebatchDir, tempFileName)+ ".zip");
+                    if (temporaryDownloadFile.exists())
+                        if (!temporaryDownloadFile.delete())
+                            throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
+                    LOG.info("   Saving content to: " + temporaryDownloadFile);
+                    // Open output file
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    zos = new ZipOutputStream(baos);
+                    zos.putNextEntry(new ZipEntry(tempFileName + ".csv"));
+                    // Write header
+                    zos.write(sb.toString().getBytes());
+                    zos.write("\r\n".getBytes());
+                } else {
+                    temporaryDownloadFile = new File(FileHelper.combinePaths(tempFilebatchDir, tempFileName)+ ".csv");
+                    if (temporaryDownloadFile.exists())
+                        if (!temporaryDownloadFile.delete())
+                            throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
+                    LOG.info("   Saving content to: " + temporaryDownloadFile);
+                    // Open output file
+                    temporaryDownloadFileBuffer = new BufferedWriter(new FileWriter(temporaryDownloadFile));
+                    // Write header
+                    temporaryDownloadFileBuffer.write(sb.toString());
+                    temporaryDownloadFileBuffer.newLine();
+                }
+            }
 
+            if (configurationBatch.zipDestinationFile()) {
+                zos.write(sb.toString().getBytes());
+                zos.write("\r\n".getBytes());
+            } else {
+                temporaryDownloadFileBuffer.write(sb.toString());
+                temporaryDownloadFileBuffer.newLine();
+            }
         }
 
         rs.close();
         stmt.close();
-        if (dataLogFileBuffer != null) {
-            dataLogFileBuffer.flush();
-            dataLogFileBuffer.close();
-            dataLogFileBuffer = null;
+
+        if (temporaryDownloadFileBuffer != null) {
+            temporaryDownloadFileBuffer.flush();
+            temporaryDownloadFileBuffer.close();
         }
 
-        File destination = new File(localDataFile.getTempPathFile());
-        if (destination.exists())
-            destination.delete();
+        if (zos != null) {
+            zos.flush();
+            zos.close();
+        }
 
-        if (!temporaryDownloadFile.renameTo(destination))
-            throw new IOException("Could not temporary download file to " + localDataFile.getTempPathFile());
+        return temporaryDownloadFile;
+
     }
 
     /*
      *
      */
-    private String adjustSQLStatement(String sqlstatement, HashMap<String, String> kvpList) {
+    private String replaceVariablesWithValues(String sqlstatement, HashMap<String, String> kvpList) {
         String ret = sqlstatement;
         Iterator<String> it = kvpList.keySet().iterator();
         while (it.hasNext()) {
             String key = (String) it.next();
             ret = ret.replaceAll("\\Q${" + key + "}\\E", kvpList.get(key));
         }
+
+        // Some additional ones
+        String uuid = UUID.randomUUID().toString();
+        ret = ret.replaceAll("\\Q${UUID}\\E", uuid);
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+        Date d = new Date();
+        ret = ret.replaceAll("\\Q${NOW}\\E", simpleDateFormat.format(d));
+
         return ret;
     }
 
     /*
      *
      */
+    /*
     private void createBatchDirectories(LocalDataFile batchFile) throws IOException {
         if (FileHelper.createDirectory(batchFile.getLocalPath())) {
             if (!FileHelper.createDirectory(batchFile.getLocalPathBatch())) {
@@ -432,11 +471,12 @@ public class JdbcReaderTask implements Runnable {
         } else {
             throw new IOException("Could not create path " + batchFile.getTempPath());
         }
-    }
+    }*/
 
     /*
      *
      */
+    /*
     private boolean validateBatches() {
         try {
             LOG.trace(" Getting batches ready for validation");
@@ -457,11 +497,12 @@ public class JdbcReaderTask implements Runnable {
             LOG.error("Error occurred during validation", e);
         }
         return false;
-    }
+    }*/
 
     /*
      *
      */
+    /*
     private void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch) throws JDBCValidationException {
         String batchIdentifiers = StringUtils.join(incompleteBatches
                 .stream()
@@ -474,12 +515,13 @@ public class JdbcReaderTask implements Runnable {
         batchValidator.validateBatches(incompleteBatches, lastCompleteBatch, configuration, db);
 
         LOG.trace(" Completed batch validation");
-    }
+    }*/
 
 
     /*
      *
      */
+    /*
     private void notifyEds() throws Exception {
 
         List<Batch> unnotifiedBatches = db.getUnnotifiedBatches(configuration.getConfigurationId(), configurationBatch.getBatchname());
@@ -527,11 +569,12 @@ public class JdbcReaderTask implements Runnable {
         }
 
         LOG.info("Notified EDS successfully {} times and failed {}", countSuccess, countFail);
-    }
+    }*/
 
     /*
      *
      */
+    /*
     private void notify(Batch unnotifiedBatch) throws JDBCReaderException, IOException {
         //Prvious->NotificationCreator notificationCreator = ImplementationActivator.createSftpNotificationCreator(configurationBatch.getInterfaceTypeName());
         //Prvious->String messagePayload = notificationCreator.createNotificationMessage(configuration, unnotifiedBatch);
@@ -621,7 +664,7 @@ public class JdbcReaderTask implements Runnable {
         return result;
     }
 
-    /*
+
     private LocalDateTime calculateNextRunTime(LocalDateTime thisRunStartTime) {
         Validate.notNull(thisRunStartTime);
         return thisRunStartTime.plusSeconds(configurationBatch.getPollFrequencySeconds());

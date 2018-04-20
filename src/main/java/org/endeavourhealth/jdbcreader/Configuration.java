@@ -63,12 +63,13 @@ public final class Configuration {
         return objroot.get("configurationId").asText();
     }
 
-    public String getLocalRootPathPrefix() {
-        return objroot.get("localRootPathPrefix").asText();
+    public String getDestinationPathPrefix() {
+        return objroot.get("destinationPathPrefix").asText();
     }
     public String getTempPathPrefix() {
         return objroot.get("tempPathPrefix").asText();
     }
+
     public String getSoftwareContentType() {
         return objroot.get("softwareContentType").asText();
     }
@@ -78,27 +79,6 @@ public final class Configuration {
 
     public String getSoftwareVersion() {
         return objroot.get("softwareVersion").asText();
-    }
-    public String getEdsUrl() {
-        return objroot.get("edsurl").asText();
-    }
-    public boolean isUseKeycloak() {
-        return objroot.get("usekeycloak").asBoolean();
-    }
-    public String getKeycloakTokenUri() {
-        return objroot.get("keycloaktokenuri").asText();
-    }
-    public String getKeycloakRealm() {
-        return objroot.get("keycloakrealm").asText();
-    }
-    public String getKeycloakUsername() {
-        return objroot.get("keycloakusername").asText();
-    }
-    public String getKeycloakPassword() {
-        return objroot.get("keycloakpassword").asText();
-    }
-    public String getKeycloakClientId() {
-        return objroot.get("keycloakclientid").asText();
     }
 
     public int getHttpManagementPort() {

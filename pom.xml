@@ -13,11 +13,11 @@
   <properties>
       <java.version>1.8</java.version>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-      <endeavour-config.version>1.16-SNAPSHOT</endeavour-config.version>
-      <endeavour-security.version>1.4-SNAPSHOT</endeavour-security.version>
-      <endeavour-utility.version>1.16-SNAPSHOT</endeavour-utility.version>
+      <endeavour-config.version>1.21-SNAPSHOT</endeavour-config.version>
+      <endeavour-security.version>1.7-SNAPSHOT</endeavour-security.version>
+      <endeavour-utility.version>1.24-SNAPSHOT</endeavour-utility.version>
       <endeavour-edsclient.version>1.0-SNAPSHOT</endeavour-edsclient.version>
-      <eds-core.version>1.64-SNAPSHOT</eds-core.version>
+      <eds-core.version>1.180-SNAPSHOT</eds-core.version>
 
       <bouncy-castle.version>1.56</bouncy-castle.version>
       <commons-csv.version>1.4</commons-csv.version>

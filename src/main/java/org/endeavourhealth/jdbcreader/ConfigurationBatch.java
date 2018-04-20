@@ -48,6 +48,10 @@ public class ConfigurationBatch {
         return batchObject.get("interfaceTypeName").asText();
     }
 
+    public boolean zipDestinationFile()  {
+        return batchObject.get("zipDestinationFile").asBoolean(false);
+    }
+
     public List<ConfigurationConnector> getConnections() {
         return connectionList;
     }

@@ -50,6 +50,14 @@ public class ConfigurationConnector {
         return connectionObject.get("interfaceFileType").asText();
     }
 
+    public String getFilename() {
+        return connectionObject.get("filename").asText();
+    }
+
+    public boolean writeEmptyFileIfNothingFound() {
+        return connectionObject.get("writeEmptyFileIfNothingFound").asBoolean();
+    }
+
     public boolean isNullValueAsString() {
         return connectionObject.get("nullValueAsString").asBoolean();
     }
