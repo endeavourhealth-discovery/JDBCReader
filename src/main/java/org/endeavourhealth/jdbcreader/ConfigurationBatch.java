@@ -52,6 +52,10 @@ public class ConfigurationBatch {
         return batchObject.get("zipDestinationFile").asBoolean(false);
     }
 
+    public boolean removeTempFile()  {
+        return batchObject.get("removeTempFile").asBoolean(true);
+    }
+
     public List<ConfigurationConnector> getConnections() {
         return connectionList;
     }

@@ -199,14 +199,14 @@ public class JdbcReaderTask implements Runnable {
                         String newFileName = FilenameUtils.concat(destBatchDir, f.getName());
                         LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
                         FileHelper.writeFileToSharedStorage(newFileName, f);
-                        // TODO
-                        //if (!f.delete())
-                        //  throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
+                        if (configurationBatch.removeTempFile()) {
+                            if (!f.delete())
+                                throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
+                        }
                     } else {
                         LOG.info("File not moved (missing)" + f.getAbsolutePath());
                     }
                 }
-                //tempDir.delete();
             }
 
             return true;
