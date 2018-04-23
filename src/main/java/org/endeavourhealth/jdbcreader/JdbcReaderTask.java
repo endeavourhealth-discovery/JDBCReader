@@ -138,13 +138,10 @@ public class JdbcReaderTask implements Runnable {
         try {
             LOG.trace("Found {} connection(s) in batch {}", configurationBatch.getConnections().size(), configurationBatch.getBatchname());
 
-            String tempBatchDir = FilenameUtils.concat(this.configuration.getTempPathPrefix(), configurationBatch.getBatchname());
-            FileHelper.createDirectoryIfNotExists(tempBatchDir);
+            FileHelper.createDirectoryIfNotExists(this.configuration.getTempPathPrefix());
 
-            String destBatchDir = null;
             if (this.configuration.getDestinationPathPrefix() != null && this.configuration.getDestinationPathPrefix().length() > 0) {
-                destBatchDir = FilenameUtils.concat(this.configuration.getDestinationPathPrefix(), configurationBatch.getBatchname());
-                FileHelper.createDirectoryIfNotExists(destBatchDir);
+                FileHelper.createDirectoryIfNotExists(this.configuration.getDestinationPathPrefix());
             }
 
             // Loop through all connections for this batch
@@ -183,7 +180,7 @@ public class JdbcReaderTask implements Runnable {
                     }
                 }
 
-                File temporaryFile = getData(connection, tempBatchDir, replaceVariablesWithValues(configurationConnector.getFilename(), kvpList), configurationConnector, kvpList);
+                File temporaryFile = getData(connection, this.configuration.getTempPathPrefix(), replaceVariablesWithValues(configurationConnector.getFilename(), kvpList), configurationConnector, kvpList);
                 tempFiles.add(temporaryFile);
 
                 LOG.trace("Saving " + kvpList.size() + " KVP entries");
@@ -192,11 +189,11 @@ public class JdbcReaderTask implements Runnable {
 
             // Move from temp to archive
             LOG.info("Completed processing {} files.", tempFiles.size());
-            if (destBatchDir != null) {
+            if (this.configuration.getDestinationPathPrefix() != null && this.configuration.getDestinationPathPrefix().length() > 0) {
                 LOG.info("Moving file(s) from temp storage to archive");
                 for (File f : tempFiles) {
                     if (f.exists()) {
-                        String newFileName = FilenameUtils.concat(destBatchDir, f.getName());
+                        String newFileName = FilenameUtils.concat(this.configuration.getDestinationPathPrefix(), f.getName());
                         LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
                         FileHelper.writeFileToSharedStorage(newFileName, f);
                         if (configurationBatch.removeTempFile()) {
