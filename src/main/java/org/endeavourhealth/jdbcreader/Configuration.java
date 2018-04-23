@@ -33,8 +33,8 @@ public final class Configuration {
 
     public Configuration(JsonNode root) throws Exception {
         this.objroot = root;
-        LOG.info("configuration:" + objroot.toString());
-        LOG.info("just checking:" + getConfigurationId());
+        //LOG.info("configuration:" + objroot.toString());
+        //LOG.info("just checking:" + getConfigurationId());
         initialiseMachineName();
         retrieveInstanceName();
         //loadDbConfiguration();
@@ -46,8 +46,8 @@ public final class Configuration {
         }
 
         JsonNode batchList = objroot.path("batchlist");
-        LOG.info("batchlist:" + batchList.isArray());
-        LOG.info("batchlist:" + batchList.isMissingNode());
+        //LOG.info("batchlist:" + batchList.isArray());
+        //LOG.info("batchlist:" + batchList.isMissingNode());
         if (batchList.isMissingNode() != true && batchList.isArray()) {
             for (JsonNode node : batchList) {
                 ConfigurationBatch newItem = new ConfigurationBatch(node);
@@ -86,7 +86,12 @@ public final class Configuration {
     }
 
     public boolean notifyStartStopSlack() {
-        return objroot.get("notifyStartStopSlack").asBoolean(false);
+        JsonNode jn = objroot.get("notifyStartStopSlack");
+        if (jn != null) {
+            return jn.asBoolean(false);
+        } else {
+            return false;
+        }
     }
 
     public List<JsonNode> getInterfaceFileTypes() {
