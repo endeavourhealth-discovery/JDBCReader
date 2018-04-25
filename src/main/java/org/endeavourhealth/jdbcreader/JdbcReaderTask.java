@@ -191,10 +191,11 @@ public class JdbcReaderTask implements Runnable {
             LOG.info("Completed processing {} files.", tempFiles.size());
             if (this.configuration.getDestinationPathPrefix() != null && this.configuration.getDestinationPathPrefix().length() > 0) {
                 List<String> filesToMove = FileHelper.listFilesInSharedStorage(this.configuration.getTempPathPrefix());
-                LOG.info("Moving {} file(s) from temp storage to archive", filesToMove.size());
+                LOG.info("Moving {} file(s) from temp storage to archive {}", filesToMove.size(), this.configuration.getDestinationPathPrefix());
                 for (String file : filesToMove) {
                     File f = new File(file);
-                    String newFileName = FilenameUtils.concat(this.configuration.getDestinationPathPrefix(), f.getName());
+                    //String newFileName = FilenameUtils.concat(this.configuration.getDestinationPathPrefix(), f.getName());
+                    String newFileName = this.configuration.getDestinationPathPrefix() + File.separator + f.getName();
                     LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
                     FileHelper.writeFileToSharedStorage(newFileName, f);
                     if (configurationBatch.removeTempFile()) {
