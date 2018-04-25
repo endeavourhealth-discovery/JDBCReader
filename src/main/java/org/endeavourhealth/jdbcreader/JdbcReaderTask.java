@@ -190,18 +190,16 @@ public class JdbcReaderTask implements Runnable {
             // Move from temp to archive
             LOG.info("Completed processing {} files.", tempFiles.size());
             if (this.configuration.getDestinationPathPrefix() != null && this.configuration.getDestinationPathPrefix().length() > 0) {
-                LOG.info("Moving file(s) from temp storage to archive");
-                for (File f : tempFiles) {
-                    if (f.exists()) {
-                        String newFileName = FilenameUtils.concat(this.configuration.getDestinationPathPrefix(), f.getName());
-                        LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
-                        FileHelper.writeFileToSharedStorage(newFileName, f);
-                        if (configurationBatch.removeTempFile()) {
-                            if (!f.delete())
-                                throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
-                        }
-                    } else {
-                        LOG.info("File not moved (missing)" + f.getAbsolutePath());
+                List<String> filesToMove = FileHelper.listFilesInSharedStorage(this.configuration.getDestinationPathPrefix());
+                LOG.info("Moving {} file(s) from temp storage to archive", filesToMove.size());
+                for (String file : filesToMove) {
+                    File f = new File(file);
+                    String newFileName = FilenameUtils.concat(this.configuration.getDestinationPathPrefix(), f.getName());
+                    LOG.info("Moving file " + f.getAbsolutePath() + " to " + newFileName);
+                    FileHelper.writeFileToSharedStorage(newFileName, f);
+                    if (configurationBatch.removeTempFile()) {
+                        if (!f.delete())
+                            throw new IOException("Could not delete existing temporary download file " + f.getAbsolutePath());
                     }
                 }
             }
