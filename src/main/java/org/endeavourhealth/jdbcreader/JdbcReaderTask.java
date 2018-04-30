@@ -146,45 +146,48 @@ public class JdbcReaderTask implements Runnable {
 
             // Loop through all connections for this batch
             for (ConfigurationConnector configurationConnector : configurationBatch.getConnections()) {
-                LOG.trace("Processing connector " + configurationConnector.getConnectorName());
+                if (configurationConnector.isActive()) {
+                    LOG.trace("Processing connector " + configurationConnector.getConnectorName());
 
-                // Get previously saved key-value-pairs
-                List<KeyValuePair> kvpListDB = db.getKeyValuePairs(configurationBatch.getBatchname(), configurationConnector.getConnectorName());
-                HashMap<String, String> kvpList = new HashMap<String, String>();
-                for (KeyValuePair kvp : kvpListDB) {
-                    kvpList.put(kvp.getKeyValue(), kvp.getDataValue());
-                }
-                LOG.trace("Found " + kvpList.size() + " KVP entries");
+                    // Get previously saved key-value-pairs
+                    List<KeyValuePair> kvpListDB = db.getKeyValuePairs(configurationBatch.getBatchname(), configurationConnector.getConnectorName());
+                    HashMap<String, String> kvpList = new HashMap<String, String>();
+                    for (KeyValuePair kvp : kvpListDB) {
+                        kvpList.put(kvp.getKeyValue(), kvp.getDataValue());
+                    }
+                    LOG.trace("Found " + kvpList.size() + " KVP entries");
 
-                // Check for variables
-                if (configurationConnector.getVariables().size() > 0) {
-                    adjustKVPListForVariableSettings(kvpList, configurationConnector.getVariables());
-                }
+                    // Check for variables
+                    if (configurationConnector.getVariables().size() > 0) {
+                        adjustKVPListForVariableSettings(kvpList, configurationConnector.getVariables());
+                    }
 
-                // Re-use connection or open new
-                Connection connection = null;
-                if (connectionList.containsKey(configurationConnector.getSqlURL())) {
-                    LOG.trace("Reusing existing connection");
-                    connection = connectionList.get(configurationConnector.getSqlURL());
+                    // Re-use connection or open new
+                    Connection connection = null;
+                    if (connectionList.containsKey(configurationConnector.getSqlURL())) {
+                        LOG.trace("Reusing existing connection");
+                        connection = connectionList.get(configurationConnector.getSqlURL());
+                    } else {
+                        LOG.trace("Creating new connection");
+                        try {
+                            connection = DriverManager.getConnection(configurationConnector.getSqlURL());
+                        } catch (SQLException e) {
+                            LOG.trace("SQLException - Auto load of driver not working");
+                            LOG.trace("Loading driver (" + configurationConnector.getDriver() + ") .....");
+                            Class.forName(configurationConnector.getDriver());
+                            LOG.trace("......Driver loaded - trying again");
+                            connection = DriverManager.getConnection(configurationConnector.getSqlURL());
+                        }
+                    }
+
+                    File temporaryFile = getData(connection, this.configuration.getTempPathPrefix(), replaceVariablesWithValues(configurationConnector.getFilename(), kvpList), configurationConnector, kvpList);
+                    tempFiles.add(temporaryFile);
+
+                    LOG.trace("Saving " + kvpList.size() + " KVP entries");
+                    db.insertUpdateKeyValuePair(configurationBatch.getBatchname(), configurationConnector.getConnectorName(), kvpList);
                 } else {
-                    LOG.trace("Creating new connection");
-                    try {
-                        connection = DriverManager.getConnection(configurationConnector.getSqlURL());
-                    }
-                    catch (SQLException e) {
-                        LOG.trace("SQLException - Auto load of driver not working");
-                        LOG.trace( "Loading driver (" + configurationConnector.getDriver() + ") .....");
-                        Class.forName(configurationConnector.getDriver());
-                        LOG.trace( "......Driver loaded - trying again");
-                        connection = DriverManager.getConnection(configurationConnector.getSqlURL());
-                    }
+                    LOG.trace("Connector is inactive " + configurationConnector.getConnectorName());
                 }
-
-                File temporaryFile = getData(connection, this.configuration.getTempPathPrefix(), replaceVariablesWithValues(configurationConnector.getFilename(), kvpList), configurationConnector, kvpList);
-                tempFiles.add(temporaryFile);
-
-                LOG.trace("Saving " + kvpList.size() + " KVP entries");
-                db.insertUpdateKeyValuePair(configurationBatch.getBatchname(), configurationConnector.getConnectorName(), kvpList);
             }
 
             // Move from temp to archive

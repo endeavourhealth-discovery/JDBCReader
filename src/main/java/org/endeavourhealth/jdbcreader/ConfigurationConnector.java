@@ -58,6 +58,10 @@ public class ConfigurationConnector {
         return connectionObject.get("writeEmptyFileIfNothingFound").asBoolean();
     }
 
+    public boolean isActive()  {
+        return (connectionObject.get("active") == null ? true : connectionObject.get("active").asBoolean(true));
+    }
+
     public boolean isNullValueAsString() {
         return connectionObject.get("nullValueAsString").asBoolean();
     }

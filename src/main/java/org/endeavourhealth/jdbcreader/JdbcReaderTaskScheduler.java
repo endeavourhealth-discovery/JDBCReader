@@ -60,12 +60,15 @@ public class JdbcReaderTaskScheduler {
         LOG.info("Number of batches:" + configuration.getBatchConfigurations().size());
 
         for (ConfigurationBatch batchConfiguration : configuration.getBatchConfigurations()) {
+            if (batchConfiguration.isActive()) {
+                LOG.info("Creating JDBCReaderTask for batch configuration " + batchConfiguration.getBatchname());
 
-            LOG.info("Creating JDBCReaderTask for batch configuration " + batchConfiguration.getBatchname());
+                JdbcReaderTask jdbcReaderTask = new JdbcReaderTask(configuration, batchConfiguration.getBatchname());
 
-            JdbcReaderTask jdbcReaderTask = new JdbcReaderTask(configuration, batchConfiguration.getBatchname());
-
-            tasks.add(new JdbcReaderTaskInfo(jdbcReaderTask, batchConfiguration));
+                tasks.add(new JdbcReaderTaskInfo(jdbcReaderTask, batchConfiguration));
+            } else {
+                LOG.info("JDBCReaderTask batch is inactive " + batchConfiguration.getBatchname());
+            }
         }
 
         return tasks;

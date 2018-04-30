@@ -52,6 +52,10 @@ public class ConfigurationBatch {
         return batchObject.get("zipDestinationFile").asBoolean(false);
     }
 
+    public boolean isActive()  {
+        return (batchObject.get("active") == null ? true : batchObject.get("active").asBoolean(true));
+    }
+
     public boolean removeTempFile()  {
         return batchObject.get("removeTempFile").asBoolean(true);
     }
