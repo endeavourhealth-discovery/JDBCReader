@@ -51,7 +51,7 @@ public class ConfigurationBatch {
     }*/
 
     public boolean zipDestinationFile()  {
-        return batchObject.get("zipDestinationFile").asBoolean(false);
+        return (batchObject.get("zipDestinationFile") == null ? false : batchObject.get("zipDestinationFile").asBoolean(false));
     }
 
     public boolean isActive()  {
@@ -59,7 +59,7 @@ public class ConfigurationBatch {
     }
 
     public boolean removeTempFile()  {
-        return batchObject.get("removeTempFile").asBoolean(true);
+        return (batchObject.get("removeTempFile") == null ? true : batchObject.get("removeTempFile").asBoolean(true));
     }
 
     public List<ConfigurationConnector> getConnections() {

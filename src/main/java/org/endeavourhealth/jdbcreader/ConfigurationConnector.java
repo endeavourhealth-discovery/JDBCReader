@@ -56,7 +56,7 @@ public class ConfigurationConnector {
     }
 
     public boolean writeEmptyFileIfNothingFound() {
-        return connectionObject.get("writeEmptyFileIfNothingFound").asBoolean();
+        return (connectionObject.get("writeEmptyFileIfNothingFound") == null ? false : connectionObject.get("writeEmptyFileIfNothingFound").asBoolean(false));
     }
 
     public boolean isActive()  {
@@ -64,7 +64,7 @@ public class ConfigurationConnector {
     }
 
     public boolean isNullValueAsString() {
-        return connectionObject.get("nullValueAsString").asBoolean();
+        return (connectionObject.get("nullValueAsString") == null ? true : connectionObject.get("nullValueAsString").asBoolean(true));
     }
 
     public List<ConfigurationConnectorVariable> getVariables() {

@@ -64,7 +64,7 @@ public final class Configuration {
     }
 
     public String getDestinationPathPrefix() {
-        return objroot.get("destinationPathPrefix").asText();
+        return (objroot.get("destinationPathPrefix") == null ? "" : objroot.get("destinationPathPrefix").asText());
     }
     public String getTempPathPrefix() {
         return objroot.get("tempPathPrefix").asText();
@@ -73,12 +73,12 @@ public final class Configuration {
     /*
     public String getSoftwareContentType() {
         return objroot.get("softwareContentType").asText();
-    }*/
+    }
     public String getConfigurationFriendlyName() {
         return objroot.get("configurationFriendlyName").asText();
     }
 
-    /*
+
     public String getSoftwareVersion() {
         return objroot.get("softwareVersion").asText();
     }

@@ -46,7 +46,7 @@ public class SlackNotifier {
     private void notifyCompleteBatch(Configuration configuration, ConfigurationBatch configurationBatch, Batch batch) {
 
         String configurationId = configuration.getConfigurationId();
-        String friendlyName = configuration.getConfigurationFriendlyName();
+        String friendlyName = configuration.getConfigurationId();
 
         String message = friendlyName + " extract (" + configurationId + ") received";
 
