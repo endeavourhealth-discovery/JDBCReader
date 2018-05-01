@@ -122,7 +122,7 @@ public class JdbcReaderTask implements Runnable {
         }
 
         // Final destination can be local file or S3
-        if (StringUtils.isNotEmpty(this.configuration.getDestinationPathPrefix())) {
+        if (this.configuration.getDestinationPathPrefix() != null && StringUtils.isNotEmpty(this.configuration.getDestinationPathPrefix())) {
             if (FileHelper.directoryExists(this.configuration.getDestinationPathPrefix()) == false)
                 throw new JDBCReaderException("Root path '" + this.configuration.getDestinationPathPrefix() + "' does not exist");
         }

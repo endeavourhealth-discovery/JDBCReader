@@ -64,8 +64,18 @@ public final class Configuration {
     }
 
     public String getDestinationPathPrefix() {
-        return (objroot.get("destinationPathPrefix") == null ? "" : objroot.get("destinationPathPrefix").asText());
+        JsonNode jn = objroot.get("destinationPathPrefix");
+        if (jn != null) {
+            if (!jn.isNull()) {
+                return jn.asText();
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
+
     public String getTempPathPrefix() {
         return objroot.get("tempPathPrefix").asText();
     }
