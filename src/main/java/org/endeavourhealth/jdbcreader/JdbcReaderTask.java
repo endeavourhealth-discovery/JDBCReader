@@ -443,9 +443,13 @@ public class JdbcReaderTask implements Runnable {
         String uuid = UUID.randomUUID().toString();
         ret = ret.replaceAll("\\Q${UUID}\\E", uuid);
 
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
         Date d = new Date();
-        ret = ret.replaceAll("\\Q${NOW}\\E", simpleDateFormat.format(d));
+        SimpleDateFormat sdfNow = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+        SimpleDateFormat sdfYYYYMMDD = new SimpleDateFormat("yyyyMMdd");
+        SimpleDateFormat sdfYYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd");
+        ret = ret.replaceAll("\\Q${NOW}\\E", sdfNow.format(d));
+        ret = ret.replaceAll("\\Q${NOW-YYYYMMDD}\\E", sdfYYYYMMDD.format(d));
+        ret = ret.replaceAll("\\Q${NOW-YYYY-MM-DD}\\E", sdfYYYY_MM_DD.format(d));
 
         return ret;
     }
