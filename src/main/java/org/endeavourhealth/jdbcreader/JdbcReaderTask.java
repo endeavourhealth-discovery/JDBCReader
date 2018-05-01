@@ -353,7 +353,7 @@ public class JdbcReaderTask implements Runnable {
                     if (configurationConnector.isNullValueAsString()) {
                         sqlField = "";
                     } else {
-                        sqlField = "~~NULL~~";
+                        sqlField = "NULL";
                     }
                 }
                 if (sb.length() > 0) {

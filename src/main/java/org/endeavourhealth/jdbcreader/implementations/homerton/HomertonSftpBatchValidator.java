@@ -19,8 +19,8 @@ public class HomertonSftpBatchValidator extends BatchValidator {
     public void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch, Configuration configuration, DataLayer db) throws JDBCValidationException {
         Validate.notNull(incompleteBatches, "incompleteBatches is null");
         Validate.notNull(configuration, "dbConfiguration is null");
-        Validate.notNull(configuration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
-        Validate.notEmpty(configuration.getInterfaceFileTypes(), "No interface file types configured");
+        //Validate.notNull(configuration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
+        //Validate.notEmpty(configuration.getInterfaceFileTypes(), "No interface file types configured");
     }
 
 

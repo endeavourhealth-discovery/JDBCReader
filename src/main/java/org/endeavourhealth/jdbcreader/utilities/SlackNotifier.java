@@ -50,7 +50,7 @@ public class SlackNotifier {
 
         String message = friendlyName + " extract (" + configurationId + ") received";
 
-        org.endeavourhealth.jdbcreader.implementations.SlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier(configurationBatch.getInterfaceTypeName());
+        org.endeavourhealth.jdbcreader.implementations.SlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier(configurationBatch.getBatchname());
         message += slackNotifier.getCompleteBatchMessageSuffix(batch);
 
         postMessage(message);

@@ -70,20 +70,22 @@ public final class Configuration {
         return objroot.get("tempPathPrefix").asText();
     }
 
+    /*
     public String getSoftwareContentType() {
         return objroot.get("softwareContentType").asText();
-    }
+    }*/
     public String getConfigurationFriendlyName() {
         return objroot.get("configurationFriendlyName").asText();
     }
 
+    /*
     public String getSoftwareVersion() {
         return objroot.get("softwareVersion").asText();
     }
 
     public int getHttpManagementPort() {
         return objroot.get("HttpManagementPort").asInt();
-    }
+    } */
 
     public boolean notifyStartStopSlack() {
         JsonNode jn = objroot.get("notifyStartStopSlack");
@@ -94,9 +96,10 @@ public final class Configuration {
         }
     }
 
+    /*
     public List<JsonNode> getInterfaceFileTypes() {
         return interfaceFileTypes;
-    }
+    }*/
 
     private void initialiseMachineName() throws JDBCReaderException {
         try {

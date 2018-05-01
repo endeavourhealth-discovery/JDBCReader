@@ -46,9 +46,10 @@ public class ConfigurationConnector {
         return connectionObject.get("connectorname").asText();
     }
 
+    /*
     public String getInterfaceFileType() {
         return connectionObject.get("interfaceFileType").asText();
-    }
+    }*/
 
     public String getFilename() {
         return connectionObject.get("filename").asText();

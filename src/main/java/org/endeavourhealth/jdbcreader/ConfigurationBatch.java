@@ -28,9 +28,10 @@ public class ConfigurationBatch {
         return batchObject.get("batchname").asText();
     }
 
+    /*
     public String getOrganisationId()  {
         return batchObject.get("organisationId").asText();
-    }
+    }*/
 
     public String getPollFrequency() {
         return batchObject.get("frequency").asText();
@@ -40,13 +41,14 @@ public class ConfigurationBatch {
         return (batchObject.get("pollstart") == null ? "" : batchObject.get("pollstart").asText());
     }
 
+    /*
     public String getLocalRootPath () {
         return batchObject.get("localRootPath").asText();
     }
 
     public String getInterfaceTypeName()  {
         return batchObject.get("interfaceTypeName").asText();
-    }
+    }*/
 
     public boolean zipDestinationFile()  {
         return batchObject.get("zipDestinationFile").asBoolean(false);
