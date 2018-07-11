@@ -1,28 +1,19 @@
 package org.endeavourhealth.jdbcreader;
 
-import org.apache.commons.io.FilenameUtils;
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.eds.EdsSender;
-import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
-import org.endeavourhealth.common.eds.EdsSenderResponse;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.core.database.dal.jdbcreader.models.Batch;
 import org.endeavourhealth.core.database.dal.jdbcreader.models.KeyValuePair;
-import org.endeavourhealth.core.database.dal.jdbcreader.models.NotificationMessage;
 import org.endeavourhealth.jdbcreader.utilities.JDBCReaderException;
 import org.endeavourhealth.jdbcreader.utilities.SlackNotifier;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Date;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -162,6 +153,12 @@ public class JdbcReaderTask implements Runnable {
                         adjustKVPListForVariableSettings(kvpList, configurationConnector.getVariables());
                     }
 
+                    //check if paramdate KVP is not in the future as this would throw out data extraction
+                    if (isParamDateInFuture(kvpList)) {
+                        LOG.trace("KVP entry <paramdate>: {} in future.....skipping connector", kvpList.get("paramdate"));
+                        continue;
+                    }
+
                     // Re-use connection or open new
                     Connection connection = null;
                     if (connectionList.containsKey(configurationConnector.getSqlURL())) {
@@ -223,6 +220,18 @@ public class JdbcReaderTask implements Runnable {
         }
 
         return false;
+    }
+
+    private boolean isParamDateInFuture(HashMap<String, String> kvpList) throws Exception {
+
+        String kvpParamDate = kvpList.get("paramdate");
+        if (!Strings.isNullOrEmpty(kvpParamDate)) {
+            Date kvpDate = new SimpleDateFormat("yyyyMMdd").parse(kvpParamDate);
+            Date today = new Date();
+            return today.before(kvpDate);
+        } else {
+            throw new JDBCReaderException("KVP entry <paramdate> missing so cannot determine run date");
+        }
     }
 
     /*
