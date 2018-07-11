@@ -230,7 +230,8 @@ public class JdbcReaderTask implements Runnable {
             Date today = new Date();
             return today.before(kvpDate);
         } else {
-            throw new JDBCReaderException("KVP entry <paramdate> missing so cannot determine run date");
+            //connector has no paramdate do just return as false
+            return false;
         }
     }
 
