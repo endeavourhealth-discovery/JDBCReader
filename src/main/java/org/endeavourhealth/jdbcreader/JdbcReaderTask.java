@@ -396,7 +396,7 @@ public class JdbcReaderTask implements Runnable {
                     zos = new ZipOutputStream(baos);
                     zos.putNextEntry(new ZipEntry(tempFileName + ".csv"));
                     // Write header
-                    zos.write(sb.toString().getBytes());
+                    zos.write(headerLine.getBytes());
                     zos.write("\r\n".getBytes());
                 } else {
                     temporaryDownloadFile = new File(FileHelper.combinePaths(tempFilebatchDir, tempFileName)+ ".csv");
@@ -407,7 +407,7 @@ public class JdbcReaderTask implements Runnable {
                     // Open output file
                     temporaryDownloadFileBuffer = new BufferedWriter(new FileWriter(temporaryDownloadFile));
                     // Write header
-                    temporaryDownloadFileBuffer.write(sb.toString());
+                    temporaryDownloadFileBuffer.write(headerLine);
                     temporaryDownloadFileBuffer.newLine();
                 }
             }
