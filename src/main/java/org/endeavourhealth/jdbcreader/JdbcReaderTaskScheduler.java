@@ -32,7 +32,7 @@ public class JdbcReaderTaskScheduler {
 
             for (JdbcReaderTaskInfo task : tasks) {
 
-                if (task.getNextScheduledDate().isBefore(LocalDateTime.now())) {
+                if (task.getNextScheduledDate() != null && task.getNextScheduledDate().isBefore(LocalDateTime.now())) {
 
                     LOG.info("Starting JdbcReaderTask " + task.getTaskName());
 
@@ -42,7 +42,9 @@ public class JdbcReaderTaskScheduler {
 
                     LOG.info("Completed JdbcReaderTask " + task.getTaskName());
 
-                    LOG.trace("JdbcReaderTask " + task.getTaskName() + " next scheduled for " + task.getNextScheduledDate().format(DATE_DISPLAY_FORMAT));
+                    if (task.getNextScheduledDate()!=null) {
+                        LOG.trace("JdbcReaderTask " + task.getTaskName() + " next scheduled for " + task.getNextScheduledDate().format(DATE_DISPLAY_FORMAT));
+                    }
                 }
             }
 

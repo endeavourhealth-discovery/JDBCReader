@@ -60,6 +60,9 @@ public class JdbcReaderTaskInfo {
             this.nextScheduledDate = LocalDateTime.now().plusMinutes(Integer.parseInt(time));
         } else if (timeUnits.toUpperCase().compareTo("H") == 0) {
             this.nextScheduledDate = LocalDateTime.now().plusHours(Integer.parseInt(time));
+        } else if (timeUnits.toUpperCase().compareTo("B") == 0) {
+            //one off (B)ulk extract so disable next run
+            this.nextScheduledDate = null;
         } else {
             throw new JDBCValidationException("Exception occurred when calculating next schedule using " + configurationBatch.getPollFrequency());
         }
