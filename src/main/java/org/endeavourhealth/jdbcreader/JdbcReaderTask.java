@@ -11,7 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Date;
 import java.util.zip.ZipEntry;
@@ -42,6 +44,8 @@ public class JdbcReaderTask implements Runnable {
             // Get last batch
             //Batch currentbatch = getOrCreateBatch();
             //LOG.trace("Current BatchId:" + currentbatch.getBatchId());
+
+            //TODO: call into ipsec up <server name> to ensure server is up
 
             LOG.trace(">>>Retrieving data");
             if (!downloadFiles()) {
@@ -228,7 +232,10 @@ public class JdbcReaderTask implements Runnable {
         String kvpParamDate = kvpList.get("paramdate");
         if (!Strings.isNullOrEmpty(kvpParamDate)) {
             Date kvpDate = new SimpleDateFormat("yyyyMMdd").parse(kvpParamDate);
-            Date today = new Date();
+            LocalDate localDateNow = LocalDate.now();
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd");   //ensure no time element
+            Date today = new SimpleDateFormat("yyyyMMdd").parse(dtf.format(localDateNow));
+
             //do not run extraction if data is in future or today
             return today.before(kvpDate) || today.equals(kvpDate);
         } else {
