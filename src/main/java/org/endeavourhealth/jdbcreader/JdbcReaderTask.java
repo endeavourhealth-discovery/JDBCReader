@@ -153,9 +153,10 @@ public class JdbcReaderTask implements Runnable {
                         adjustKVPListForVariableSettings(kvpList, configurationConnector.getVariables());
                     }
 
-                    //check if paramdate KVP is not in the future as this would throw out data extraction
-                    if (isParamDateInFuture(kvpList)) {
-                        LOG.trace("KVP entry <paramdate>: {} in future.....skipping connector", kvpList.get("paramdate"));
+                    //check if paramdate KVP is not in the future or today as this would throw out data extraction
+                    //extraction needs a full day to ensure all data is collected
+                    if (isParamDateInFutureOrToday(kvpList)) {
+                        LOG.trace("KVP entry <paramdate>: {} in future or equals today.....skipping connector", kvpList.get("paramdate"));
                         continue;
                     }
 
@@ -222,13 +223,14 @@ public class JdbcReaderTask implements Runnable {
         return false;
     }
 
-    private boolean isParamDateInFuture(HashMap<String, String> kvpList) throws Exception {
+    private boolean isParamDateInFutureOrToday(HashMap<String, String> kvpList) throws Exception {
 
         String kvpParamDate = kvpList.get("paramdate");
         if (!Strings.isNullOrEmpty(kvpParamDate)) {
             Date kvpDate = new SimpleDateFormat("yyyyMMdd").parse(kvpParamDate);
             Date today = new Date();
-            return today.before(kvpDate);
+            //do not run extraction if data is in future or today
+            return today.before(kvpDate) || today.equals(kvpDate);
         } else {
             //connector has no paramdate do just return as false
             return false;
