@@ -454,7 +454,7 @@ public class JdbcReaderTask implements Runnable {
         String ret = sqlstatement;
         Iterator<String> it = kvpList.keySet().iterator();
         while (it.hasNext()) {
-            String key = (String) it.next();
+            String key = it.next();
             ret = ret.replaceAll("\\Q${" + key + "}\\E", kvpList.get(key));
         }
 
