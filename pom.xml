@@ -16,7 +16,7 @@
       <endeavour-config.version>1.22-SNAPSHOT</endeavour-config.version>
       <endeavour-security.version>1.11-SNAPSHOT</endeavour-security.version>
       <endeavour-utility.version>1.35-SNAPSHOT</endeavour-utility.version>
-      <endeavour-edsclient.version>1.0-SNAPSHOT</endeavour-edsclient.version>
+      <!--<endeavour-edsclient.version>1.0-SNAPSHOT</endeavour-edsclient.version>-->
       <eds-core.version>1.288-SNAPSHOT</eds-core.version>
 
       <bouncy-castle.version>1.56</bouncy-castle.version>
@@ -64,11 +64,11 @@
             <artifactId>utility</artifactId>
             <version>${endeavour-utility.version}</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.endeavourhealth.common</groupId>
             <artifactId>eds-client</artifactId>
             <version>${endeavour-edsclient.version}</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>com.kstruct</groupId>
             <artifactId>gethostname4j</artifactId>
